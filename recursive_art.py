@@ -1,8 +1,11 @@
-""" TODO: Put your header comment here """
+""" Mini Project #2: Computational Art
+Software Design Spring 2017
+Gracey Wilson """
 
 import random
+from random import choice
 from PIL import Image
-
+import math
 
 def build_random_function(min_depth, max_depth):
     """ Builds a random function of depth at least min_depth and depth
@@ -15,9 +18,21 @@ def build_random_function(min_depth, max_depth):
                  (see assignment writeup for details on the representation of
                  these functions)
     """
-    # TODO: implement this
-    pass
+    depth = random.randint(min_depth,max_depth)
+    f_options = ['prod','avg','cos_pi','sin_pi','squared']
+    f_chosen = choice(f_options)
+    f = []
 
+    if min_depth == 1:
+        return choice([['x'],['y']])
+    else:
+        f.append(f_chosen)
+        if f_chosen == 'prod' or f_chosen == 'avg':
+            f.append(build_random_function(min_depth-1,max_depth-1))
+            f.append(build_random_function(min_depth-1,max_depth-1))
+        else:
+            f.append(build_random_function(min_depth-1,max_depth-1))
+        return f
 
 def evaluate_random_function(f, x, y):
     """ Evaluate the random function f with inputs x,y
@@ -33,9 +48,23 @@ def evaluate_random_function(f, x, y):
         >>> evaluate_random_function(["y"],0.1,0.02)
         0.02
     """
-    # TODO: implement this
-    pass
-
+    if f[0] == 'x':
+        return x
+    elif f[0] == 'y':
+        return y
+    elif f[0] == 'prod':
+        return evaluate_random_function(f[1], x, y) * evaluate_random_function(f[2], x, y)
+    elif f[0] == 'squared':
+        return evaluate_random_function(f[1],x,y)**2
+    elif f[0] == "avg":
+        return 0.5 * (evaluate_random_function(f[1], x, y) + (
+            evaluate_random_function(f[2], x, y)))
+    elif f[0] == "cos_pi":
+        return math.cos(math.pi * evaluate_random_function(f[1], x, y))
+    elif f[0] == "sin_pi":
+        return math.sin(math.pi * evaluate_random_function(f[1], x, y))
+    else:
+        print('Please try again')
 
 def remap_interval(val,
                    input_interval_start,
@@ -53,7 +82,7 @@ def remap_interval(val,
                             values for val
         output_interval_start: the start of the interval that contains all
                                possible output values
-        output_inteval_end: the end of the interval that contains all possible
+        output_interval_end: the end of the interval that contains all possible
                             output values
         returns: the value remapped from the input to the output interval
 
@@ -64,9 +93,11 @@ def remap_interval(val,
         >>> remap_interval(5, 4, 6, 1, 2)
         1.5
     """
-    # TODO: implement this
-    pass
 
+    old_ratio = (val - input_interval_start) / (input_interval_end - input_interval_start)
+    output = output_interval_end - output_interval_start
+    new_val = (old_ratio * output) + output_interval_start
+    return new_val
 
 def color_map(val):
     """ Maps input value between -1 and 1 to an integer 0-255, suitable for
@@ -106,7 +137,7 @@ def test_image(filename, x_size=350, y_size=350):
                             random.randint(0, 255),  # Green channel
                             random.randint(0, 255))  # Blue channel
 
-    im.save(filename)
+    # im.save(filename)
 
 
 def generate_art(filename, x_size=350, y_size=350):
@@ -116,9 +147,9 @@ def generate_art(filename, x_size=350, y_size=350):
         x_size, y_size: optional args to set image dimensions (default: 350)
     """
     # Functions for red, green, and blue channels - where the magic happens!
-    red_function = ["x"]
-    green_function = ["y"]
-    blue_function = ["x"]
+    red_function = build_random_function(1,4)
+    green_function = build_random_function(5,7)
+    blue_function = build_random_function(1,2)
 
     # Create image and loop over all pixels
     im = Image.new("RGB", (x_size, y_size))
@@ -135,6 +166,40 @@ def generate_art(filename, x_size=350, y_size=350):
 
     im.save(filename)
 
+def get_an_uncontroversial_name():
+    """ Find a filename that doesn't to not overwrite existing art.
+
+        Do this in a roudabout way of finding all the current art files that
+        follow a convention of base_string + an_int + extension, finding the
+        largest an_int, and +1-ing that to get the returned filename.
+
+        The irony of this is that in the process of writing
+        and testing this function many arts were created and overwritten.
+
+         - Evan Lloyd New-Schmidt (@newsch)
+
+        returns: filename as a string
+    """
+    import glob
+    base_string = 'myart'  # prefix for filenames
+    extension = '.png'
+    files = glob.glob('myart*.png')  # get all files that match the pattern
+    # parse number out of filename and get biggest one
+    big_int = 1
+    for file in files:
+        int_begin = len(base_string)
+        int_end = file.find(extension)
+        new_int = file[int_begin:int_end]
+        # check to make sure this is really an int and if it's bigger or not
+        if new_int.isdigit():
+            new_int = int(new_int)
+            if new_int > big_int:
+                big_int = new_int
+
+    bigger_int = big_int + 1  # make a bigger int for the new filename
+    an_uncontroversial_filename = base_string + str(bigger_int) + extension
+    return(an_uncontroversial_filename)
+
 
 if __name__ == '__main__':
     import doctest
@@ -143,8 +208,7 @@ if __name__ == '__main__':
     # Create some computational art!
     # TODO: Un-comment the generate_art function call after you
     #       implement remap_interval and evaluate_random_function
-    # generate_art("myart.png")
+    generate_art(get_an_uncontroversial_name())
 
     # Test that PIL is installed correctly
-    # TODO: Comment or remove this function call after testing PIL install
-    test_image("noise.png")
+    # test_image("noise.png")
